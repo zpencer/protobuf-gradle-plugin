@@ -402,12 +402,20 @@ class ProtobufPlugin implements Plugin<Project> {
           }
         }
       } else {
-        project.sourceSets.each { sourceSet ->
-          Task javaCompileTask = project.tasks.getByName(sourceSet.getCompileTaskName("java"))
-          project.protobuf.generateProtoTasks.ofSourceSet(sourceSet.name).each { generateProtoTask ->
-            javaCompileTask.dependsOn(generateProtoTask)
-            generateProtoTask.getAllOutputDirs().each { dir ->
-              javaCompileTask.source project.fileTree([dir:dir])
+        project.sourceSets.each { SourceSet sourceSet ->
+          project.protobuf.generateProtoTasks.ofSourceSet(sourceSet.name).each { GenerateProtoTask genProto ->
+            project.tasks.findByName(sourceSet.getCompileTaskName("java")).each { compileJava ->
+              compileJava.dependsOn(genProto)
+              genProto.getAllOutputDirs().each { dir ->
+                compileJava.source project.fileTree([dir: dir])
+              }
+            }
+
+            project.tasks.findByName(sourceSet.getCompileTaskName("kotlin")).each { compileKotlin ->
+              compileKotlin.dependsOn(genProto)
+              genProto.getAllOutputDirs().each { dir ->
+                compileKotlin.source dir
+              }
             }
           }
         }

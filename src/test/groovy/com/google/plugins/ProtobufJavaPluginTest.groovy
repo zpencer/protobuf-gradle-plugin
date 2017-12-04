@@ -10,7 +10,7 @@ import org.gradle.testkit.runner.TaskOutcome
 import spock.lang.Specification
 
 /**
- * Unit tests for normal java functionality.
+ * Unit tests for normal java and kotlin functionality.
  */
 class ProtobufJavaPluginTest extends Specification {
   private static final List<String> GRADLE_VERSIONS = ["2.12", "3.0", "4.0"]
@@ -56,7 +56,7 @@ class ProtobufJavaPluginTest extends Specification {
     assert project.tasks.extractMain2Proto instanceof ProtobufExtract
   }
 
-  void "testProject should be successfully executed"() {
+  void "testProject should be successfully executed (java + kotlin)"() {
     given: "project from testProject"
     File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProject')
     ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
@@ -80,6 +80,25 @@ class ProtobufJavaPluginTest extends Specification {
       }
       assert fileList.size > 0
     }
+
+    where:
+    gradleVersion << GRADLE_VERSIONS
+  }
+
+  void "testProjectKotlin should be successfully executed (kotlin-only project)"() {
+    given: "project from testProject"
+    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectKotlin')
+    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectKotlin')
+
+    when: "build is invoked"
+    BuildResult result = GradleRunner.create()
+      .withProjectDir(projectDir)
+      .withArguments('build')
+      .withDebug(true)
+      .build()
+
+    then: "it succeed"
+    result.task(":build").outcome == TaskOutcome.SUCCESS
 
     where:
     gradleVersion << GRADLE_VERSIONS
