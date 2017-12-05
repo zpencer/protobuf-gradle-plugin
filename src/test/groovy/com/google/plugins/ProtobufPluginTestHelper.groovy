@@ -44,12 +44,16 @@ class ProtobufPluginTestHelper {
     return dir
   }
 
-  static void copyTestProjects(File projectDir, File... subProjects) {
+  /**
+   * Initializes {@code projectDir} by copying a list of subprojects into it.
+   */
+  static void initializeSubProjects(File projectDir, File... subProjects) {
     File settingsFile = new File(projectDir, 'settings.gradle')
     settingsFile.createNewFile()
 
     subProjects.each {
-      FileUtils.copyDirectory(it, projectDir)
+      File subProjectDir = new File(projectDir.path, it.name)
+      FileUtils.copyDirectory(it, subProjectDir)
 
       settingsFile << """
           include ':$it.name'

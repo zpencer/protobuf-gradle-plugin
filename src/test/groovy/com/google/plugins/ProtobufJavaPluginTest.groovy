@@ -175,12 +175,12 @@ class ProtobufJavaPluginTest extends Specification {
   void "testProjectDependent should be successfully executed"() {
     given: "project from testProject & testProjectDependent"
     File testProjectStaging = ProtobufPluginTestHelper.createTestProject(
-        'testProject', 'testProject')
+        'testProject', 'testProjectBase', 'testProject')
     File testProjectDependentStaging =  ProtobufPluginTestHelper.createTestProject(
         'testProjectDependent', 'testProjectDependent')
 
     File mainProjectDir = ProtobufPluginTestHelper.createTestProject('testProjectDependentMain')
-    ProtobufPluginTestHelper.copyTestProjects(mainProjectDir, testProjectStaging, testProjectDependentStaging)
+    ProtobufPluginTestHelper.initializeSubProjects(mainProjectDir, testProjectStaging, testProjectDependentStaging)
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
