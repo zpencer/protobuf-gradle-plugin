@@ -66,6 +66,7 @@ class ProtobufJavaPluginTest extends Specification {
       .withProjectDir(projectDir)
       .withArguments('build')
       .withGradleVersion(gradleVersion)
+      .withDebug(true)
       .build()
 
     then: "it succeed"
