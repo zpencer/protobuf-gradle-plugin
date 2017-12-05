@@ -58,8 +58,8 @@ class ProtobufJavaPluginTest extends Specification {
 
   void "testProject should be successfully executed (java-only project)"() {
     given: "project from testProject"
-    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProject')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
+    File projectDir = ProtobufPluginTestHelper.createTestProject(
+        'testProject', 'testProjectBase', 'testProject')
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
@@ -90,9 +90,8 @@ class ProtobufJavaPluginTest extends Specification {
 
   void "testProjectKotlin should be successfully executed (kotlin-only project)"() {
     given: "project from testProjectKotlin overlaid on testProject"
-    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectKotlin')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectKotlin')
+    File projectDir = ProtobufPluginTestHelper.createTestProject(
+        'testProjectKotlin', 'testProjectBase', 'testProjectKotlin')
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
@@ -120,10 +119,12 @@ class ProtobufJavaPluginTest extends Specification {
 
   void "testProjectJavaAndKotlin should be successfully executed (java+kotlin project)"() {
     given: "project from testProjecJavaAndKotlin overlaid on testProjectKotlin, testProject"
-    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectJavaAndKotlin')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectKotlin')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectJavaAndKotlin')
+    File projectDir = ProtobufPluginTestHelper.createTestProject(
+        'testProjectJavaAndKotlin',
+        'testProjectBase',
+        'testProject',
+        'testProjectKotlin',
+        'testProjectJavaAndKotlin')
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
@@ -151,8 +152,8 @@ class ProtobufJavaPluginTest extends Specification {
 
   void "testProjectLite should be successfully executed"() {
     given: "project from testProjectLite"
-    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectLite')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectLite')
+    File projectDir = ProtobufPluginTestHelper.createTestProject(
+        'testProjectLite', 'testProjectBase', 'testProjectLite')
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
@@ -173,8 +174,13 @@ class ProtobufJavaPluginTest extends Specification {
 
   void "testProjectDependent should be successfully executed"() {
     given: "project from testProject & testProjectDependent"
-    File mainProjectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectDependent')
-    ProtobufPluginTestHelper.copyTestProjects(mainProjectDir, 'testProject', 'testProjectDependent')
+    File testProjectStaging = ProtobufPluginTestHelper.createTestProject(
+        'testProject', 'testProject')
+    File testProjectDependentStaging =  ProtobufPluginTestHelper.createTestProject(
+        'testProjectDependent', 'testProjectDependent')
+
+    File mainProjectDir = ProtobufPluginTestHelper.createTestProject('testProjectDependentMain')
+    ProtobufPluginTestHelper.copyTestProjects(mainProjectDir, testProjectStaging, testProjectDependentStaging)
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
@@ -195,8 +201,8 @@ class ProtobufJavaPluginTest extends Specification {
 
   void "testProjectCustomProtoDir should be successfully executed"() {
     given: "project from testProjectCustomProtoDir"
-    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectCustomProtoDir')
-    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectCustomProtoDir', )
+    File projectDir = ProtobufPluginTestHelper.createTestProject(
+        'testProjectCustomProtoDir', 'testProjectCustomProtoDir')
 
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
