@@ -8,12 +8,6 @@ public class FooTest {
   }
 
   @org.junit.Test
-  public void testMainProtosKotlin() {
-    // call kotlin class from java
-    assertEquals(11, new KotlinFoo().getDefaultInstances().size());
-  }
-
-  @org.junit.Test
   public void testTestProtos() {
     // from src/test/proto/test.proto
     Test.MsgTest.getDefaultInstance();

@@ -56,7 +56,7 @@ class ProtobufJavaPluginTest extends Specification {
     assert project.tasks.extractMain2Proto instanceof ProtobufExtract
   }
 
-  void "testProject should be successfully executed (java + kotlin)"() {
+  void "testProject should be successfully executed (java-only project)"() {
     given: "project from testProject"
     File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProject')
     ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
@@ -89,8 +89,9 @@ class ProtobufJavaPluginTest extends Specification {
   }
 
   void "testProjectKotlin should be successfully executed (kotlin-only project)"() {
-    given: "project from testProject"
+    given: "project from testProjectKotlin overlaid on testProject"
     File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectKotlin')
+    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
     ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectKotlin')
 
     when: "build is invoked"
@@ -102,6 +103,47 @@ class ProtobufJavaPluginTest extends Specification {
 
     then: "it succeed"
     result.task(":build").outcome == TaskOutcome.SUCCESS
+    ['grpc', 'main', 'test'].each {
+      File generatedSrcDir = new File(projectDir.path, "build/generated/source/proto/$it")
+      List<File> fileList = []
+      generatedSrcDir.eachFileRecurse { file ->
+        if (file.path.endsWith('.java')) {
+          fileList.add (file)
+        }
+      }
+      assert fileList.size > 0
+    }
+
+    where:
+    gradleVersion << GRADLE_VERSIONS
+  }
+
+  void "testProjectJavaAndKotlin should be successfully executed (java+kotlin project)"() {
+    given: "project from testProjecJavaAndKotlin overlaid on testProjectKotlin, testProject"
+    File projectDir = ProtobufPluginTestHelper.prepareTestTempDir('testProjectJavaAndKotlin')
+    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProject')
+    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectKotlin')
+    ProtobufPluginTestHelper.copyTestProject(projectDir, 'testProjectJavaAndKotlin')
+
+    when: "build is invoked"
+    BuildResult result = GradleRunner.create()
+      .withProjectDir(projectDir)
+      .withArguments('compileKotlin', 'build')
+      .withDebug(true)
+      .build()
+
+    then: "it succeed"
+    result.task(":build").outcome == TaskOutcome.SUCCESS
+    ['grpc', 'main', 'test'].each {
+      File generatedSrcDir = new File(projectDir.path, "build/generated/source/proto/$it")
+      List<File> fileList = []
+      generatedSrcDir.eachFileRecurse { file ->
+        if (file.path.endsWith('.java')) {
+          fileList.add (file)
+        }
+      }
+      assert fileList.size > 0
+    }
 
     where:
     gradleVersion << GRADLE_VERSIONS
