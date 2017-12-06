@@ -39,7 +39,10 @@ import org.gradle.api.Task
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.SourceDirectorySet
+import org.gradle.api.internal.file.DefaultSourceDirectorySet
 import org.gradle.api.internal.file.FileResolver
+import org.gradle.api.internal.file.collections.DefaultDirectoryFileTreeFactory
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.tasks.SourceSet
@@ -431,8 +434,16 @@ class ProtobufPlugin implements Plugin<Project> {
             if (kotlinCompileTask != null) {
               kotlinCompileTask.dependsOn generateProtoTask
               generateProtoTask.getAllOutputDirs().each { dir ->
-                System.out.println(String.format("%s adding to inputs: %s", variant.name, dir))
-                kotlinCompileTask.inputs.dir dir
+                SourceDirectorySet generatedDirSet = new DefaultSourceDirectorySet(dir.toString(), fileResolver, new DefaultDirectoryFileTreeFactory())
+                generatedDirSet.srcDirs(dir)
+                generatedDirSet.include("**/*.java")
+                kotlinCompileTask.source generatedDirSet
+              }
+              if (variant.name.toLowerCase() == 'ArmFreeappDebug'.toLowerCase()) {
+                kotlinCompileTask.doFirst {
+                  Task t = kotlinCompileTask
+                  System.out.println("a block of convenience code for breakpoint convenience")
+                }
               }
             }
           }
@@ -445,13 +456,14 @@ class ProtobufPlugin implements Plugin<Project> {
               if (compileTask != null) {
                 compileTask.dependsOn(genProto)
                 genProto.getAllOutputDirs().each { dir ->
-                  // The Java plugin requires the dir in FileTree form, but the Kotlin plugin requires
-                  // a File. It appears safe to generically supply both here. This
-                  // *may* also work for additional languages such as scala, but this theory
-                  // is untested. Set the project property read in getSupportedLanguages to
-                  // to add other languages to the whitelist.
-                  compileTask.source project.fileTree([dir:dir])
-                  compileTask.source dir
+                  SourceDirectorySet generatedDirSet = new DefaultSourceDirectorySet(dir.toString(), fileResolver, new DefaultDirectoryFileTreeFactory())
+                  generatedDirSet.srcDirs(dir)
+                  generatedDirSet.include("**/*.java")
+                  compileTask.source generatedDirSet
+                }
+                if (lang == 'kotlin') {
+                  Task t = compileTask
+                  System.out.println("a block of convenience code for breakpoint convenience")
                 }
               }
             }

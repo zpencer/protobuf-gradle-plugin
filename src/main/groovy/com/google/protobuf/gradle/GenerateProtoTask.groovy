@@ -37,6 +37,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Named
 import org.gradle.api.NamedDomainObjectContainer
+import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
@@ -347,7 +348,7 @@ public class GenerateProtoTask extends DefaultTask {
     return "${outputBaseDir}/${plugin.outputSubDir}"
   }
 
-  Collection<File> getAllOutputDirs() {
+  Collection<SourceDirectorySet> getAllOutputDirs() {
     ImmutableList.Builder<File> dirs = ImmutableList.builder()
     builtins.each { builtin ->
       dirs.add(new File(getOutputDir(builtin)))
