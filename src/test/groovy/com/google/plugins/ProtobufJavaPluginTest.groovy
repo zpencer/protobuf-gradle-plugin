@@ -129,7 +129,7 @@ class ProtobufJavaPluginTest extends Specification {
     when: "build is invoked"
     BuildResult result = GradleRunner.create()
       .withProjectDir(projectDir)
-      .withArguments('compileKotlin', 'build')
+      .withArguments('build')
       .withDebug(true)
       .build()
 
