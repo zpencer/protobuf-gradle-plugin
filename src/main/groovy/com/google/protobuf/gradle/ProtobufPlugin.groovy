@@ -43,6 +43,7 @@ import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.tasks.SourceSet
+import org.gradle.util.GUtil
 
 import javax.inject.Inject
 
@@ -51,6 +52,8 @@ import javax.inject.Inject
  */
 class ProtobufPlugin implements Plugin<Project> {
     // any one of these plugins should be sufficient to proceed with applying this plugin
+    private static final String KOTLIN_ANDDROID = 'kotlin-android'
+
     private static final List<String> PREREQ_PLUGIN_OPTIONS = [
             'java',
             'com.android.application',
@@ -421,9 +424,17 @@ class ProtobufPlugin implements Plugin<Project> {
     private linkGenerateProtoTasksToJavaCompile() {
       if (Utils.isAndroidProject(project)) {
         (getNonTestVariants() + project.android.testVariants).each { variant ->
-          project.protobuf.generateProtoTasks.ofVariant(variant.name).each { generateProtoTask ->
+          project.protobuf.generateProtoTasks.ofVariant(variant.name).each { GenerateProtoTask generateProtoTask ->
             // This cannot be called once task execution has started
             variant.registerJavaGeneratingTask(generateProtoTask, generateProtoTask.getAllOutputDirs())
+            Task kotlinCompileTask = project.tasks.findByName("compile" + GUtil.toCamelCase(variant.name) + "Kotlin")
+            if (kotlinCompileTask != null) {
+              kotlinCompileTask.dependsOn generateProtoTask
+              generateProtoTask.getAllOutputDirs().each { dir ->
+                System.out.println(String.format("%s adding to inputs: %s", variant.name, dir))
+                kotlinCompileTask.inputs.dir dir
+              }
+            }
           }
         }
       } else {

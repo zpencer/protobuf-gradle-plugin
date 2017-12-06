@@ -14,7 +14,7 @@ import spock.lang.Specification
  * Unit tests for normal java and kotlin functionality.
  */
 class ProtobufJavaPluginTest extends Specification {
-  private static final List<String> GRADLE_VERSIONS = ["2.12", "3.0", "4.0", "4.3"]
+  private static final List<String> GRADLE_VERSIONS = ["4.3"]
 
   private Project setupBasicProject() {
     Project project = ProjectBuilder.builder().build()

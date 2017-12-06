@@ -55,6 +55,7 @@ buildscript {
       .withGradleVersion(gradleVersion)
       .forwardStdOutput(new OutputStreamWriter(System.out))
       .forwardStdError(new OutputStreamWriter(System.err))
+      .withDebug(true)
       .build()
 
     then: "it succeed"

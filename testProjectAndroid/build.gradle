@@ -1,6 +1,8 @@
 // An Android application project.
 
 apply plugin: 'com.android.application'
+// for now, kotlin must be applied before protobuf-plugin
+apply plugin: 'kotlin-android'
 apply plugin: 'com.google.protobuf'
 
 repositories {
