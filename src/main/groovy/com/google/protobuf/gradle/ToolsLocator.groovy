@@ -97,11 +97,7 @@ class ToolsLocator {
         protoTask.inputs.files(config)
 
         String artifactTaskName = protoTask.name + "ResolveArtifact" + locator.name
-        Task artifactTask = project.tasks.findByName(artifactTaskName)
-        if (artifactTask != null) {
-          continue
-        }
-        artifactTask = project.tasks.create(artifactTaskName, DefaultTask) {
+        Task artifactTask = project.tasks.create(artifactTaskName, DefaultTask) {
           if (locator.path == null) {
             project.logger.info("Resolving artifact: ${notation}")
             File file = config.fileCollection(dep).singleFile
