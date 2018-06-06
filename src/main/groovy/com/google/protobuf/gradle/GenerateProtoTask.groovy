@@ -31,8 +31,6 @@ package com.google.protobuf.gradle
 
 import com.google.common.base.Preconditions
 import com.google.common.collect.ImmutableList
-import com.google.common.primitives.Ints
-
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.Named
@@ -42,6 +40,8 @@ import org.gradle.api.internal.file.DefaultSourceDirectorySet
 import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.file.collections.DefaultDirectoryFileTreeFactory
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.ConfigureUtil
@@ -232,6 +232,20 @@ public class GenerateProtoTask extends DefaultTask {
   public GenerateProtoTask() {
     builtins = project.container(PluginOptions)
     plugins = project.container(PluginOptions)
+    if (Utils.compareGradleVersion(project, "4.0") >= 0) {
+      // We must avoid using @CacheableTask because this plugin must work for older versions
+      // of gradle that predate the annotation.
+      // cacheIf was @Incubating but later became stable API, so it is safe to use.
+      outputs.cacheIf {
+        return project.protobuf.enableCacheExperimental
+      }
+    }
+  }
+
+  @OutputDirectory
+  File getOutputDirForCache() {
+    File ret = new File(outputBaseDir)
+    return ret
   }
 
   //===========================================================================
@@ -396,8 +410,17 @@ public class GenerateProtoTask extends DefaultTask {
     return srcSet
   }
 
-  @TaskAction
-  void compile() {
+  @Input
+  List<String> getCommandsForCache() {
+    List<String> ret = []
+    for (List<String> cmd : getCommands()) {
+      ret.addAll cmd
+      ret.add null
+    }
+    return ret
+  }
+
+  List<List<String>> getCommands() {
     Preconditions.checkState(state == State.FINALIZED, 'doneConfig() has not been called')
 
     ToolsLocator tools = project.protobuf.tools
@@ -452,7 +475,12 @@ public class GenerateProtoTask extends DefaultTask {
     }
 
     List<List<String>> cmds = generateCmds(baseCmd, protoFiles, getCmdLengthLimit())
-    for (List<String> cmd : cmds) {
+    return cmds
+  }
+
+  @TaskAction
+  void compile() {
+    for (List<String> cmd : getCommands()) {
       compileFiles(cmd)
     }
   }

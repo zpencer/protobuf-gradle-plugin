@@ -44,6 +44,17 @@ class ProtobufExtract extends DefaultTask {
   private File destDir
   private Boolean isTest = null
 
+  ProtobufExtract() {
+    if (Utils.compareGradleVersion(project, "4.0") >= 0) {
+      // We must avoid using @CacheableTask because this plugin must work for older versions
+      // of gradle that predate the annotation.
+      // cacheIf was @Incubating but later became stable API, so it is safe to use.
+      outputs.cacheIf {
+        return project.protobuf.enableCacheExperimental
+      }
+    }
+  }
+
   protected void setDestDir(File destDir) {
     Preconditions.checkState(this.destDir == null, 'destDir already set')
     this.destDir = destDir

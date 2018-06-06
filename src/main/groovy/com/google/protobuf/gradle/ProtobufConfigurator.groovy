@@ -46,6 +46,7 @@ public class ProtobufConfigurator {
    * "${project.buildDir}/generated/source/proto".
    */
   String generatedFilesBaseDir
+  boolean enableCacheExperimental = false
 
   public ProtobufConfigurator(Project project, FileResolver fileResolver) {
     this.project = project

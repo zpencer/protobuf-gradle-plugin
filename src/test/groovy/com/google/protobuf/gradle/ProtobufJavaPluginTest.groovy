@@ -324,6 +324,62 @@ class ProtobufJavaPluginTest extends Specification {
     limit == Integer.MAX_VALUE
   }
 
+  void "testProject protobuf tasks should be cacheable (java-only project)"() {
+    given: "project from testProject"
+    File projectDir = ProtobufPluginTestHelper.projectBuilder('testProject')
+        .copyDirs('testProjectBase', 'testProject')
+        .build()
+
+    new File(projectDir, "settings.gradle") << """
+buildCache {
+    local(DirectoryBuildCache) {
+        directory = new File(rootDir, 'test-build-cache')
+        enabled = true
+        push = true
+     }
+}
+"""
+    BuildResult initialResult = GradleRunner.create()
+      .withProjectDir(projectDir)
+      .withArguments('build', 'clean', '--stacktrace',
+        "--build-cache")
+      .withGradleVersion(gradleVersion)
+      .forwardStdOutput(new OutputStreamWriter(System.out))
+      .forwardStdError(new OutputStreamWriter(System.err))
+      .withDebug(true)
+      .build()
+
+    when: "build is invoked with warmed cache"
+    BuildResult result = GradleRunner.create()
+      .withProjectDir(projectDir)
+      .withArguments('build', '--stacktrace',
+        "--build-cache")
+      .withGradleVersion(gradleVersion)
+      .forwardStdOutput(new OutputStreamWriter(System.out))
+      .forwardStdError(new OutputStreamWriter(System.err))
+      .withDebug(true)
+      .build()
+
+    then: "it succeed"
+    result.task(":build").outcome == TaskOutcome.SUCCESS
+
+    result.task(":extractProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":extractIncludeProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":generateProto").outcome == TaskOutcome.FROM_CACHE
+
+    result.task(":extractGrpcProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":extractIncludeGrpcProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":generateGrpcProto").outcome == TaskOutcome.FROM_CACHE
+
+    result.task(":extractTestProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":extractIncludeTestProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":generateTestProto").outcome == TaskOutcome.FROM_CACHE
+    verifyProjectDirHelper(projectDir)
+
+    where:
+    gradleVersion << GRADLE_VERSIONS.findAll { Utils.compareGradleVersion(it, "4.0") >= 0 }
+  }
+
   private static void verifyProjectDirHelper(File projectDir) {
     ['grpc', 'main', 'test'].each {
       File generatedSrcDir = new File(projectDir.path, "build/generated/source/proto/$it")

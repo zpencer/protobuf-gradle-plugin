@@ -90,7 +90,15 @@ class Utils {
    * given target version.  Only major and minor versions are checked.  Patch version is ignored.
    */
   static int compareGradleVersion(Project project, String target) {
-    Matcher gv = parseVersionString(project.gradle.gradleVersion)
+    return compareGradleVersion(project.gradle.gradleVersion, target)
+  }
+
+  /**
+   * Returns positive/0/negative if current Gradle version is higher than/equal to/lower than the
+   * given target version.  Only major and minor versions are checked.  Patch version is ignored.
+   */
+  static int compareGradleVersion(String version, String target) {
+    Matcher gv = parseVersionString(version)
     Matcher tv = parseVersionString(target)
     int majorVersionDiff = gv.group(1).toInteger() - tv.group(1).toInteger()
     if (majorVersionDiff != 0) {

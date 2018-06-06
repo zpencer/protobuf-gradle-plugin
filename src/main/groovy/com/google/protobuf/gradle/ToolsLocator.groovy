@@ -28,9 +28,11 @@
  */
 package com.google.protobuf.gradle
 
+import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 
@@ -94,7 +96,12 @@ class ToolsLocator {
         // register the configuration dependency as a task input
         protoTask.inputs.files(config)
 
-        protoTask.doFirst {
+        String artifactTaskName = protoTask.name + "ResolveArtifact" + locator.name
+        Task artifactTask = project.tasks.findByName(artifactTaskName)
+        if (artifactTask != null) {
+          continue
+        }
+        artifactTask = project.tasks.create(artifactTaskName, DefaultTask) {
           if (locator.path == null) {
             project.logger.info("Resolving artifact: ${notation}")
             File file = config.fileCollection(dep).singleFile
@@ -105,6 +112,7 @@ class ToolsLocator {
             locator.path = file.path
           }
         }
+        protoTask.dependsOn artifactTask
       }
     }
   }
