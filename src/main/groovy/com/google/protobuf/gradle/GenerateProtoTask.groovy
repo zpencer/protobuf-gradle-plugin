@@ -43,6 +43,7 @@ import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.util.ConfigureUtil
@@ -128,11 +129,18 @@ public class GenerateProtoTask extends DefaultTask {
         'Should not be called after configuration has finished')
   }
 
+  void setGenerateDescriptorSet(boolean generateDescriptorSet) {
+    this.generateDescriptorSet = generateDescriptorSet;
+    if (this.generateDescriptorSet) { // If enabled, add the appropriate output
+      outputs.file getDescriptorPath() withPropertyName("descriptorPath")
+    }
+  }
+
   void setOutputBaseDir(String outputBaseDir) {
     checkInitializing()
     Preconditions.checkState(this.outputBaseDir == null, 'outputBaseDir is already set')
     this.outputBaseDir = outputBaseDir
-    outputs.dir outputBaseDir
+    outputs.dir outputBaseDir withPropertyName("outputBaseDir")
   }
 
   void setSourceSet(SourceSet sourceSet) {
@@ -241,12 +249,6 @@ public class GenerateProtoTask extends DefaultTask {
         return project.protobuf.enableCacheableTasksExperimental
       }
     }
-  }
-
-  @OutputDirectory
-  File getOutputDirForCache() {
-    File ret = new File(outputBaseDir)
-    return ret
   }
 
   //===========================================================================
@@ -418,14 +420,14 @@ public class GenerateProtoTask extends DefaultTask {
   @Input
   List<String> getCommandsForCache() {
     List<String> ret = []
-    for (List<String> cmd : getCommands()) {
+    for (List<String> cmd : getCommands(false)) {
       ret.addAll cmd
       ret.add null
     }
     return ret
   }
 
-  List<List<String>> getCommands() {
+  List<List<String>> getCommands(boolean createDirs) {
     Preconditions.checkState(state == State.FINALIZED, 'doneConfig() has not been called')
 
     ToolsLocator tools = project.protobuf.tools
@@ -435,7 +437,9 @@ public class GenerateProtoTask extends DefaultTask {
 
     [builtins, plugins]*.each { plugin ->
       File outputDir = new File(getOutputDir(plugin))
-      outputDir.mkdirs()
+      if (createDirs) {
+        outputDir.mkdirs()
+      }
     }
 
     List<String> dirs = includeDirs*.path.collect { "-I${it}" }
@@ -467,9 +471,6 @@ public class GenerateProtoTask extends DefaultTask {
       // Ensure that the folder for the descriptor exists;
       // the user may have set it to point outside an existing tree
       File folder = new File(path).parentFile
-      if (!folder.exists()) {
-        folder.mkdirs()
-      }
       baseCmd += "--descriptor_set_out=${path}"
       if (descriptorSetOptions.includeImports) {
         baseCmd += "--include_imports"
@@ -485,7 +486,7 @@ public class GenerateProtoTask extends DefaultTask {
 
   @TaskAction
   void compile() {
-    for (List<String> cmd : getCommands()) {
+    for (List<String> cmd : getCommands(true)) {
       compileFiles(cmd)
     }
   }
