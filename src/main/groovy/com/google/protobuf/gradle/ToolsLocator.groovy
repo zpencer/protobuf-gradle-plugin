@@ -96,6 +96,11 @@ class ToolsLocator {
         // register the configuration dependency as a task input
         protoTask.inputs.files(config)
 
+        // We must use a task dependency here rather than doFirst{}. doFirst{} executes
+        // as a part of the execution phase but we need the command line args to be accessible
+        // *before* the task executes. The command is treated as an @Input to the task and is
+        // used to to determine the up-to-date status, i.e. if any protoc flags changed then
+        // the task is rerun.
         String artifactTaskName = protoTask.name + "ResolveArtifact" + locator.name
         Task artifactTask = project.tasks.create(artifactTaskName, DefaultTask) {
           if (locator.path == null) {

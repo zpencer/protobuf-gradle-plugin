@@ -41,6 +41,7 @@ import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.file.collections.DefaultDirectoryFileTreeFactory
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
@@ -237,7 +238,7 @@ public class GenerateProtoTask extends DefaultTask {
       // of gradle that predate the annotation.
       // cacheIf was @Incubating but later became stable API, so it is safe to use.
       outputs.cacheIf {
-        return project.protobuf.enableCacheExperimental
+        return project.protobuf.enableCacheableTasksExperimental
       }
     }
   }
@@ -410,6 +411,10 @@ public class GenerateProtoTask extends DefaultTask {
     return srcSet
   }
 
+  /**
+   * Do not use. This method should only be called by Gradle to determine whether the protoc
+   * command has changed. If it has changed, Gradle will do a new incremental build.
+   */
   @Input
   List<String> getCommandsForCache() {
     List<String> ret = []

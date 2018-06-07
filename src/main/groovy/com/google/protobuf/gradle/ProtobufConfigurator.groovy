@@ -46,7 +46,11 @@ public class ProtobufConfigurator {
    * "${project.buildDir}/generated/source/proto".
    */
   String generatedFilesBaseDir
-  boolean enableCacheExperimental = false
+
+  /**
+   * Allow protobuf plugin tasks to be cacheable. This is an experimental feature.
+   */
+  boolean enableCacheableTasksExperimental = false
 
   public ProtobufConfigurator(Project project, FileResolver fileResolver) {
     this.project = project

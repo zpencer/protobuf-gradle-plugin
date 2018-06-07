@@ -50,7 +50,7 @@ class ProtobufExtract extends DefaultTask {
       // of gradle that predate the annotation.
       // cacheIf was @Incubating but later became stable API, so it is safe to use.
       outputs.cacheIf {
-        return project.protobuf.enableCacheExperimental
+        return project.protobuf.enableCacheableTasksExperimental
       }
     }
   }
