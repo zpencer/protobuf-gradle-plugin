@@ -59,7 +59,7 @@ protobuf {
       task.generateDescriptorSet = true
     }
   }
-  enableCacheExperimental = true
+  enableCacheableTasksExperimental = true
 }
 
 // To include all sourceSets in the project jar
