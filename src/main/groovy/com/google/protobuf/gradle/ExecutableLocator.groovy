@@ -29,6 +29,7 @@
 package com.google.protobuf.gradle
 
 import org.gradle.api.Named
+import org.gradle.api.tasks.Input
 
 /**
  * Locates an executable that can either be found locally or downloaded from
@@ -47,6 +48,7 @@ public class ExecutableLocator implements Named {
     this.name = name
   }
 
+  @Input
   @Override
   public String getName() {
     return name
@@ -69,10 +71,12 @@ public class ExecutableLocator implements Named {
     this.artifact = null
   }
 
+  @Input
   public String getArtifact() {
     return artifact
   }
 
+  @Input
   public String getPath() {
     return path
   }

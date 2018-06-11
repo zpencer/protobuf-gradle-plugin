@@ -32,6 +32,7 @@ import com.google.common.base.Preconditions
 import org.apache.commons.lang.StringUtils
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskInputs
 import org.gradle.plugins.ide.idea.GenerateIdeaModule
@@ -146,6 +147,49 @@ class Utils {
           f.mkdirs()
         }
       }
+    }
+  }
+
+  /**
+   * A linked list representing a collection of items that may have {@link Nested} methods.
+   * We can not simply return a list of objects and expect Gradle to check each of them
+   * for {@link Nested} methods, because none of the methods of java of groovy's collection
+   * types have the Gradle annotation.
+   * This class turns the list into a linked list where each node's getter is annotated as
+   * {@link Nested}.
+   */
+  static class NestedLinkedList {
+    private static final Object NOT_NESTED = new Object()
+    private int idx
+    private List<Object> items
+
+    NestedLinkedList(Collection<Object> items) {
+      this.items = new ArrayList<>(items)
+      idx = 0
+    }
+
+    private NestedLinkedList(List<Object> items, int idx) {
+      this.items = items
+      this.idx = idx
+    }
+
+    @Nested
+    Object getItem() {
+      if (idx < items.size()) {
+        return items.get(idx)
+      }
+      return NOT_NESTED
+    }
+
+    // can not return a NestedLinkedList here otherwise gradle will OOM trying to eagerly expand
+    // the struct based on method signatures. Instead, return an Object and force gradle to lazy
+    // expand.
+    @Nested
+    Object getNext() {
+      if (idx + 1 < items.size()) {
+        return new NestedLinkedList(items, idx + 1)
+      }
+      return NOT_NESTED
     }
   }
 }

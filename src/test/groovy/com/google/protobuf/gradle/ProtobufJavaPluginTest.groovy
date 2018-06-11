@@ -329,11 +329,13 @@ class ProtobufJavaPluginTest extends Specification {
     File projectDir = ProtobufPluginTestHelper.projectBuilder('testProject')
         .copyDirs('testProjectBase', 'testProject')
         .build()
+    File cacheDir = projectDir.toPath().resolve("test-build-cache").toFile()
+    cacheDir.mkdirs()
 
     new File(projectDir, "settings.gradle") << """
 buildCache {
     local(DirectoryBuildCache) {
-        directory = new File(rootDir, 'test-build-cache')
+        directory = new File("${cacheDir.getPath()}")
         enabled = true
         push = true
      }
@@ -375,6 +377,78 @@ buildCache {
     result.task(":extractIncludeTestProto").outcome == TaskOutcome.FROM_CACHE
     result.task(":generateTestProto").outcome == TaskOutcome.FROM_CACHE
     verifyProjectDirHelper(projectDir)
+
+    where:
+    gradleVersion << GRADLE_VERSIONS.findAll { Utils.compareGradleVersion(it, "4.0") >= 0 }
+  }
+
+  void "testProject protobuf tasks should be cacheable and relocatable (java-only project)"() {
+    given: "project from testProject"
+    File projectDir1 = ProtobufPluginTestHelper.projectBuilder('testProject1')
+        .copyDirs('testProjectBase', 'testProject')
+        .build()
+    File cacheDir = projectDir1.toPath().resolve("test-build-cache").toFile()
+
+    new File(projectDir1, "settings.gradle") << """
+buildCache {
+    local(DirectoryBuildCache) {
+        directory = new File("${cacheDir.getPath()}")
+        enabled = true
+        push = true
+     }
+}
+"""
+
+    BuildResult initialResult = GradleRunner.create()
+        .withProjectDir(projectDir1)
+        .withArguments('build', 'clean', '--stacktrace',
+        "--build-cache")
+        .withGradleVersion(gradleVersion)
+        .forwardStdOutput(new OutputStreamWriter(System.out))
+        .forwardStdError(new OutputStreamWriter(System.err))
+        .withDebug(true)
+        .build()
+
+    when: "build is invoked with warmed cache in a relocated directory"
+
+    File projectDir2 = ProtobufPluginTestHelper.projectBuilder('testProject2')
+        .copyDirs('testProjectBase', 'testProject')
+        .build()
+
+    new File(projectDir2, "settings.gradle") << """
+buildCache {
+    local(DirectoryBuildCache) {
+        directory = new File("${cacheDir.getPath()}")
+        enabled = true
+        push = true
+     }
+}
+"""
+    BuildResult result = GradleRunner.create()
+        .withProjectDir(projectDir2)
+        .withArguments('build', '--stacktrace',
+        "--build-cache")
+        .withGradleVersion(gradleVersion)
+        .forwardStdOutput(new OutputStreamWriter(System.out))
+        .forwardStdError(new OutputStreamWriter(System.err))
+        .withDebug(true)
+        .build()
+
+    then: "it succeed"
+    result.task(":build").outcome == TaskOutcome.SUCCESS
+
+    result.task(":extractProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":extractIncludeProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":generateProto").outcome == TaskOutcome.FROM_CACHE
+
+    result.task(":extractGrpcProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":extractIncludeGrpcProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":generateGrpcProto").outcome == TaskOutcome.FROM_CACHE
+
+    result.task(":extractTestProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":extractIncludeTestProto").outcome == TaskOutcome.FROM_CACHE
+    result.task(":generateTestProto").outcome == TaskOutcome.FROM_CACHE
+    verifyProjectDirHelper(projectDir2)
 
     where:
     gradleVersion << GRADLE_VERSIONS.findAll { Utils.compareGradleVersion(it, "4.0") >= 0 }

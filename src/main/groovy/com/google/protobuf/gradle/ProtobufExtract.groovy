@@ -31,6 +31,7 @@ package com.google.protobuf.gradle
 
 import com.google.common.base.Preconditions
 import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 /**
@@ -70,7 +71,8 @@ class ProtobufExtract extends DefaultTask {
     return isTest
   }
 
-  protected File getDestDir() {
+  @OutputDirectory
+  File getDestDir() {
     return destDir
   }
 

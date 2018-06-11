@@ -35,6 +35,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
+import org.gradle.api.tasks.Nested
 
 /**
  * Holds locations of all external executables, i.e., protoc and plugins.
@@ -97,11 +98,12 @@ class ToolsLocator {
         protoTask.inputs.files(config)
 
         // We must use a task dependency here rather than doFirst{}. doFirst{} executes
-        // as a part of the execution phase but we need the command line args to be accessible
-        // *before* the task executes. The command is treated as an @Input to the task and is
-        // used to to determine the up-to-date status, i.e. if any protoc flags changed then
-        // the task is rerun.
+        // as a part of the execution phase but we need the protoc+plugin location to be known
+        // before then in order to support incremental builds.
         String artifactTaskName = protoTask.name + "ResolveArtifact" + locator.name
+        // Not sure if this task needs any work to support incremental builds. It seems
+        // unneeded since paths of artifact dependencies should not change from one
+        // build to the next.
         Task artifactTask = project.tasks.create(artifactTaskName, DefaultTask) {
           if (locator.path == null) {
             project.logger.info("Resolving artifact: ${notation}")
@@ -116,6 +118,16 @@ class ToolsLocator {
         protoTask.dependsOn artifactTask
       }
     }
+  }
+
+  @Nested
+  ExecutableLocator getProtocForCacheInternal() {
+    return protoc
+  }
+
+  @Nested
+  Utils.NestedLinkedList getPluginsForCacheInternal() {
+    return Utils.NestedLinkedList(plugins)
   }
 
   static List<String> artifactParts(String artifactCoordinate) {

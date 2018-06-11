@@ -41,10 +41,12 @@ import org.gradle.api.internal.file.FileResolver
 import org.gradle.api.internal.file.collections.DefaultDirectoryFileTreeFactory
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.TaskOutputs
 import org.gradle.util.ConfigureUtil
 
 /**
@@ -59,7 +61,7 @@ public class GenerateProtoTask extends DefaultTask {
   // Two quotes and a space.
   static final int CMD_ARGUMENT_EXTRA_LENGTH = 3
 
-  private final List includeDirs = []
+  private final List<File> includeDirs = []
   private final NamedDomainObjectContainer<PluginOptions> builtins
   private final NamedDomainObjectContainer<PluginOptions> plugins
 
@@ -82,6 +84,7 @@ public class GenerateProtoTask extends DefaultTask {
    *
    * Default: false
    */
+  @Input
   boolean generateDescriptorSet
 
   /**
@@ -101,6 +104,7 @@ public class GenerateProtoTask extends DefaultTask {
      *
      * Default: false
      */
+    @Input
     boolean includeSourceInfo
 
     /**
@@ -108,9 +112,17 @@ public class GenerateProtoTask extends DefaultTask {
      *
      * Default: false
      */
+    @Input
     boolean includeImports
+
+    @Input
+    String getPathForCacheInternal() {
+      // We can not simply annotate a nullable field as @Input
+      return path == null ? "" : path
+    }
   }
 
+  @Nested
   final DescriptorSetOptions descriptorSetOptions = new DescriptorSetOptions()
 
   private static enum State {
@@ -243,12 +255,6 @@ public class GenerateProtoTask extends DefaultTask {
     }
   }
 
-  @OutputDirectory
-  File getOutputDirForCache() {
-    File ret = new File(outputBaseDir)
-    return ret
-  }
-
   //===========================================================================
   //        Configuration methods
   //===========================================================================
@@ -270,6 +276,11 @@ public class GenerateProtoTask extends DefaultTask {
     return builtins
   }
 
+  @Nested
+  Utils.NestedLinkedList getBuiltinsForCacheInternal() {
+    return new Utils.NestedLinkedList(builtins)
+  }
+
   /**
    * Configures the protoc plugins in a closure, which will be maniuplating a
    * NamedDomainObjectContainer<PluginOptions>.
@@ -285,6 +296,11 @@ public class GenerateProtoTask extends DefaultTask {
   public NamedDomainObjectContainer<PluginOptions> getPlugins() {
     checkCanConfig()
     return plugins
+  }
+
+  @Nested
+  Utils.NestedLinkedList getPluginsForCacheInternal() {
+    return new Utils.NestedLinkedList(plugins)
   }
 
   /**
@@ -304,6 +320,11 @@ public class GenerateProtoTask extends DefaultTask {
     } else {
       includeDirs.add(project.file(dir))
     }
+  }
+
+  @InputFiles
+  List<File> getInputDirsForCacheInternal() {
+    return includeDirs
   }
 
   /**
@@ -337,6 +358,7 @@ public class GenerateProtoTask extends DefaultTask {
       return this
     }
 
+    @Input
     public List<String> getOptions() {
       return options
     }
@@ -344,6 +366,7 @@ public class GenerateProtoTask extends DefaultTask {
     /**
      * Returns the name of the plugin or builtin.
      */
+    @Input
     @Override
     public String getName() {
       return name
@@ -411,21 +434,13 @@ public class GenerateProtoTask extends DefaultTask {
     return srcSet
   }
 
-  /**
-   * Do not use. This method should only be called by Gradle to determine whether the protoc
-   * command has changed. If it has changed, Gradle will do a new incremental build.
-   */
-  @Input
-  List<String> getCommandsForCache() {
-    List<String> ret = []
-    for (List<String> cmd : getCommands()) {
-      ret.addAll cmd
-      ret.add null
-    }
-    return ret
+  @Nested
+  String getToolsForCacheInternal() {
+    return project.protobuf.tools
   }
 
-  List<List<String>> getCommands() {
+  @TaskAction
+  void compile() {
     Preconditions.checkState(state == State.FINALIZED, 'doneConfig() has not been called')
 
     ToolsLocator tools = project.protobuf.tools
@@ -480,12 +495,7 @@ public class GenerateProtoTask extends DefaultTask {
     }
 
     List<List<String>> cmds = generateCmds(baseCmd, protoFiles, getCmdLengthLimit())
-    return cmds
-  }
-
-  @TaskAction
-  void compile() {
-    for (List<String> cmd : getCommands()) {
+    for (List<String> cmd : cmds) {
       compileFiles(cmd)
     }
   }
